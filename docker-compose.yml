@@ -1,31 +1,38 @@
-version: '3.8'
 services:
-  mysql-master:
+  mysql-primary:
     image: mysql:8.0
-    container_name: mysql-master
+    container_name: mysql-primary
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: aula-db
     ports:
-      - "3308:3306"
+      - "3307:3306"
+    command: >
+      --server-id=1
+      --log-bin=mysql-bin
+      --binlog-do-db=aula-db
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
     volumes:
-      - master-data:/var/lib/mysql
-      - ./master/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./primary_data:/var/lib/mysql
+      - ./init_primary.sql:/docker-entrypoint-initdb.d/init_primary.sql
 
   mysql-replica:
     image: mysql:8.0
     container_name: mysql-replica
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: aula-db
     ports:
-      - "3307:3306"
+      - "3308:3306"
+    command: >
+      --server-id=2
+      --gtid-mode=ON
+      --enforce-gtid-consistency=ON
     depends_on:
-      - mysql-master
+      - mysql-primary
     volumes:
-      - replica-data:/var/lib/mysql
-      - ./replica/my.cnf:/etc/mysql/conf.d/my.cnf
-
-volumes:
-  master-data:
-  replica-data:
+      - ./replica_data:/var/lib/mysql
+      - ./init_replica.sql:/docker-entrypoint-initdb.d/init_replica.sql
